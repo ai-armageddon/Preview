@@ -1,0 +1,17 @@
+                         ACME PAPER CO.  --  INVOICE #1042
+
+  Bill to: Cafe Delacroix                         Date: 2026-09-01
+           12 Rue de l'Universite                 Due:  2026-10-01
+
+
+  Item                                 Qty      Unit       Total
+  --------------------------------------------------------------
+  A4 copier paper, 80gsm (500 sh.)      40      $4.90    $196.00
+  Envelopes, C5 window (box/500)         3     $18.00     $54.00
+  Toner cartridge, black                 2     $61.50    $123.00
+  --------------------------------------------------------------
+                                          Subtotal        $373.00
+                                          Tax (8%)         $29.84
+                                          Total           $402.84
+
+  "Thanks for your business" -- (c) 2026 Acme Paper Co.

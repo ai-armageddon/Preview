@@ -2,6 +2,10 @@
 
 Open files in macOS **Preview.app** straight from your shell — no `open -a Preview` boilerplate.
 
+<p align="center">
+  <img src="demo/demo.gif" alt="Terminal demo: Preview opens a PDF and an image in Preview.app, skips an unsupported .txt with a hint, then dumps and greps a PDF's text with -t" width="900">
+</p>
+
 ```sh
 Preview report.pdf          # opens in Preview
 Preview *.png               # opens all of them
@@ -148,6 +152,16 @@ different encoding there.
 53 assertions covering all three modes. `open` and `pdftotext` are stubbed, so nothing launches
 on screen and poppler isn't needed for most of it. One test builds a real PDF with
 `cupsfilter` and extracts from it end to end when poppler is available.
+
+### Regenerating the demo
+
+The GIF at the top is recorded with [vhs](https://github.com/charmbracelet/vhs) from
+`demo/demo.tape`. `demo/rc.zsh` stubs `open` so Preview.app doesn't launch mid-recording.
+
+```sh
+brew install vhs
+cd demo && vhs demo.tape
+```
 
 ## Compatibility check
 
