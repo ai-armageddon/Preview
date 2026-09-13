@@ -4,6 +4,7 @@
 #   Preview                macOS file picker, opens whatever you select
 #   Preview -f weird.xyz   skip the compatibility check
 #   Preview -t doc.pdf     dump PDF text to the terminal (needs poppler)
+#   Preview -a doc.pdf     same, transliterated to 7-bit ASCII
 #
 # zsh resolves function names case-sensitively before falling through to PATH,
 # so the capitalized `Preview` shadows the case-insensitive filesystem match
@@ -11,7 +12,7 @@
 #
 # https://github.com/ai-armageddon/Preview
 
-PREVIEW_VERSION="1.1.0"
+PREVIEW_VERSION="1.2.0"
 
 # Extensions Preview.app handles. Override or extend without editing this file:
 #   PREVIEW_EXTRA_EXTS=(fits pcx)   in your zshrc, before sourcing
@@ -34,11 +35,15 @@ PREVIEW_EXTS=(
 )
 
 # Dump the text layer of one or more PDFs to stdout. Internal; used by -t.
+# Usage: _preview_pdftotext <ascii:0|1> file...
 _preview_pdftotext() {
   emulate -L zsh
-  local f multi=0
+  local ascii=$1 f multi=0
+  shift
   local -a opts
   opts=(${=PREVIEW_PDFTOTEXT_OPTS:--layout})
+  # -enc last so it wins if PREVIEW_PDFTOTEXT_OPTS also set an encoding.
+  (( ascii )) && opts+=(-enc ASCII7)
   (( $# > 1 )) && multi=1
 
   for f in "$@"; do
@@ -52,23 +57,25 @@ Preview() {
   emulate -L zsh
   setopt local_options no_nomatch
 
-  local force=0 text=0 f ext ok=0
+  local force=0 text=0 ascii=0 f ext ok=0
   local -a files
 
   while (( $# )); do
     case "$1" in
       -f|--force) force=1; shift ;;
       -t|--text)  text=1; shift ;;
+      -a|--ascii) text=1; ascii=1; shift ;;
       -h|--help)
         print -r -- "Preview $PREVIEW_VERSION - open files in macOS Preview.app"
         print -r -- ""
-        print -r -- "Usage: Preview [-f] [-t] [file ...]"
+        print -r -- "Usage: Preview [-f] [-t|-a] [file ...]"
         print -r -- ""
         print -r -- "  file ...      one or more files to open"
         print -r -- "  (no args)     open a macOS file picker"
         print -r -- "  -f, --force   skip the extension compatibility check"
         print -r -- "  -t, --text    print PDF text to the terminal instead of"
         print -r -- "                opening the GUI (requires poppler)"
+        print -r -- "  -a, --ascii   like -t, but transliterate to 7-bit ASCII"
         print -r -- "  -h, --help    show this help"
         print -r -- "  -v, --version show version"
         return 0 ;;
@@ -153,9 +160,9 @@ Preview() {
     if [[ -t 1 ]]; then
       local -a pager
       pager=(${=PREVIEW_PAGER:-${PAGER:-less}})
-      _preview_pdftotext $valid | $pager
+      _preview_pdftotext $ascii $valid | $pager
     else
-      _preview_pdftotext $valid
+      _preview_pdftotext $ascii $valid
     fi
     return 0
   fi

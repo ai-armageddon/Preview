@@ -96,6 +96,17 @@ assert "text respects opts"  "-raw"           "$(PREVIEW_PDFTOTEXT_OPTS=-raw Pre
 out=$(Preview -t doc.pdf b.PDF)
 assert "multi-pdf header"    "==> doc.pdf <==" "$out"
 
+print "\nascii mode (stubbed)"
+assert "ascii adds -enc"      "-enc ASCII7"     "$(Preview -a doc.pdf)"
+assert "ascii long flag"      "-enc ASCII7"     "$(Preview --ascii doc.pdf)"
+assert "ascii implies text"   "PDFTOTEXT:"      "$(Preview -a doc.pdf)"
+refute "ascii does not open"  "OPEN:"           "$(Preview -a doc.pdf)"
+assert "ascii keeps -layout"  "-layout"         "$(Preview -a doc.pdf)"
+assert "ascii rejects nonpdf" "only works on PDFs" "$(Preview -a a.png 2>&1)"
+assert "-af clusters"         "-enc ASCII7"     "$(Preview -af weird.xyz 2>&1)"
+refute "plain -t has no enc"  "-enc"            "$(Preview -t doc.pdf)"
+assert "ascii enc wins over opts" "-enc UTF-8 -enc ASCII7" "$(PREVIEW_PDFTOTEXT_OPTS='-enc UTF-8' Preview -a doc.pdf)"
+
 print "\nmissing poppler"
 # Empty PATH in a clean subshell, so pdftotext genuinely isn't findable.
 out=$(PATH=/nonexistent /bin/zsh -fc "source ${(q)SRC}; Preview -t ${(q)TMP}/doc.pdf" 2>&1)
@@ -113,6 +124,21 @@ if (( $+commands[pdftotext] )); then
     assert_rc "real text rc" 0 "$(Preview -t real.pdf >/dev/null 2>&1; print $?)"
   else
     skip "real PDF extraction (could not generate a test PDF)"
+  fi
+  # Non-ASCII source: em dash, curly quotes, accent, copyright sign.
+  printf 'Caf\xc3\xa9 \xe2\x80\x94 \xe2\x80\x9cquoted\xe2\x80\x9d \xc2\xa9\n' > uni.txt
+  if /usr/sbin/cupsfilter uni.txt > uni.pdf 2>/dev/null && [[ -s uni.pdf ]]; then
+    ascii_out=$(Preview -a uni.pdf 2>/dev/null)
+    assert "ascii transliterates dash"   '--'        "$ascii_out"
+    assert "ascii straightens quotes"    '"quoted"'  "$ascii_out"
+    assert "ascii maps copyright"        '(c)'       "$ascii_out"
+    assert "ascii strips accent"         'Cafe'      "$ascii_out"
+    [[ $ascii_out == *[^[:ascii:]]* ]] \
+      && no "ascii output is pure 7-bit" "found non-ASCII bytes in: $ascii_out" \
+      || ok "ascii output is pure 7-bit"
+    assert "utf8 default keeps accent"   'Café'      "$(Preview -t uni.pdf 2>/dev/null)"
+  else
+    skip "ascii transliteration (could not generate a test PDF)"
   fi
 else
   skip "real PDF extraction (poppler not installed)"

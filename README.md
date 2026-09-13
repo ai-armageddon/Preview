@@ -7,6 +7,7 @@ Preview report.pdf          # opens in Preview
 Preview *.png               # opens all of them
 Preview                     # file picker, opens whatever you select
 Preview -t report.pdf       # read the PDF as text, no GUI
+Preview -a report.pdf       # same, as plain 7-bit ASCII
 ```
 
 ## Why a function and not an alias
@@ -50,12 +51,13 @@ cp preview.zsh ~/.zsh/functions/
 ## Usage
 
 ```
-Preview [-f] [-t] [file ...]
+Preview [-f] [-t|-a] [file ...]
 
   file ...        one or more files to open
   (no args)       open a macOS file picker (multi-select allowed)
   -f, --force     skip the extension compatibility check
   -t, --text      print PDF text to the terminal instead of opening the GUI
+  -a, --ascii     like -t, but transliterated to 7-bit ASCII
   -h, --help      show help
   -v, --version   show version
 ```
@@ -112,13 +114,38 @@ Details worth knowing:
   OCR. If a page is just a photo of text, you'll get empty output — that's the file's
   fault, not the tool's. Open it in the GUI instead, or run it through an OCR tool first.
 
+### ASCII mode
+
+`-a` is `-t` with the output transliterated to plain 7-bit ASCII — useful for terminals
+with poor Unicode fonts, for feeding into tools that choke on multibyte characters, or
+when you just want clean `--` instead of `—`.
+
+```sh
+Preview -a paper.pdf
+```
+
+What poppler does with the common offenders:
+
+| In the PDF | `-t` (UTF-8) | `-a` (ASCII) |
+| --- | --- | --- |
+| em dash | `—` | `--` |
+| curly quotes | `“quoted”` | `"quoted"` |
+| copyright | `©` | `(c)` |
+| accented letters | `Café` | `Cafe` |
+
+Punctuation transliterates cleanly. Accented letters lose their marks, so if you're
+extracting names or non-English text where that matters, stay with `-t`.
+
+`-a` appends `-enc ASCII7` after `PREVIEW_PDFTOTEXT_OPTS`, so it wins even if you've set a
+different encoding there.
+
 ## Testing
 
 ```sh
 ./test.zsh
 ```
 
-38 assertions covering both modes. `open` and `pdftotext` are stubbed, so nothing launches
+53 assertions covering all three modes. `open` and `pdftotext` are stubbed, so nothing launches
 on screen and poppler isn't needed for most of it. One test builds a real PDF with
 `cupsfilter` and extracts from it end to end when poppler is available.
 
